@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+</head>
+<body>
+    <h2>User Profile for {{ username }}</h2>
+    
+    <p>Welcome, {{ username }}. Here's your profile information:</p>
+    
+    <ul>
+        <li>First Name: {{ first_name }}</li>
+        <li>Last Name: {{ last_name }}</li>
+        <li>Email: {{ email }}</li>
+        <li>Address: {{ address }}</li>
+    </ul>
+    
+    <a href="{{ url_for('index', username=username) }}">Back to Homepage</a>
+</body>
+</html>
