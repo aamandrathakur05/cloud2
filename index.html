@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+</head>
+<body>
+    <h2>Welcome to the Homepage, {{ username }}!</h2>
+    
+    <p>You're logged in successfully. Below are some options:</p>
+    
+    <ul>
+        <li><a href="{{ url_for('display') }}">View Your Profile</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+    </ul>
+</body>
+</html>
