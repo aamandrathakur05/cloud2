@@ -1,69 +1,80 @@
 from flask import Flask, render_template, request, redirect, url_for
+import sqlite3
 
 app = Flask(__name__)
 
-# Simulated user data (hardcoded)
-users = {
-    "admin": "password123",
-    "user1": "mypassword"
-}
+def init_db():
+    """Initialize the database and create the users table if not exists."""
+    with sqlite3.connect('users.db') as conn:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS users 
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                      username TEXT UNIQUE, 
+                      password TEXT, 
+                      firstname TEXT, 
+                      lastname TEXT, 
+                      email TEXT, 
+                      address TEXT)''')
+        conn.commit()
 
-# Hardcoded user profile data
-user_profiles = {
-    "admin": {
-        "first_name": "Admin",
-        "last_name": "User",
-        "email": "admin@example.com",
-        "address": "123 Admin St"
-    },
-    "user1": {
-        "first_name": "User1",
-        "last_name": "Test",
-        "email": "user1@example.com",
-        "address": "456 User1 St"
-    }
-}
+# Initialize the database
+init_db()
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
+def index():
+    return render_template('register.html')
+
+@app.route('/register', methods=['POST'])
+def register():
+    username = request.form['username']
+    password = request.form['password']
+    firstname = request.form['first_name']
+    lastname = request.form['last_name']
+    email = request.form['email']
+    address = request.form['address']
+    
+    try:
+        with sqlite3.connect('users.db') as conn:
+            c = conn.cursor()
+            c.execute("""
+                INSERT INTO users (username, password, firstname, lastname, email, address) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (username, password, firstname, lastname, email, address))
+            conn.commit()
+    except sqlite3.IntegrityError:
+        return "Username already exists!"  # Handle duplicate username error
+    
+    return redirect(url_for('profile', username=username))
+
+@app.route('/profile/<username>')
+def profile(username):
+    with sqlite3.connect('users.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT username, firstname, lastname, email, address FROM users WHERE username=?", (username,))
+        user = c.fetchone()
+    
+    if user:
+        return render_template('profile.html', user=user)
+    else:
+        return "User not found!", 404
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Retrieve username and password from the form
         username = request.form['username']
         password = request.form['password']
         
-        # Check if the username exists and the password matches
-        if username in users and users[username] == password:
-            return redirect(url_for('index', username=username))
+        with sqlite3.connect('users.db') as conn:
+            c = conn.cursor()
+            c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+            user = c.fetchone()
+        
+        if user:
+            return redirect(url_for('profile', username=username))
         else:
-            # If the credentials don't match
-            return render_template('login.html', error="Invalid username or password")
+            return "Invalid credentials, please try again."
     
-    # GET request, display the login form
     return render_template('login.html')
 
-
-@app.route('/index/<username>')
-def index(username):
-    return render_template('index.html', username=username)
-
-
-@app.route('/display/<username>')
-def display(username):
-    if username in user_profiles:
-        user_profile = user_profiles[username]
-        return render_template('display.html', username=username,
-                               first_name=user_profile['first_name'],
-                               last_name=user_profile['last_name'],
-                               email=user_profile['email'],
-                               address=user_profile['address'])
-    else:
-        return redirect(url_for('login'))  # Redirect if user not found
-
-
-@app.route('/logout')
-def logout():
-    return redirect(url_for('login'))
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
